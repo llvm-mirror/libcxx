@@ -146,6 +146,9 @@ typedef __char32_t char32_t;
 
 #if !(__has_feature(cxx_auto_type))
 #define _LIBCPP_HAS_NO_AUTO_TYPE
+#endif
+
+#if !(__has_feature(cxx_access_control_sfinae)) || !__has_feature(cxx_trailing_return)
 #define _LIBCPP_HAS_NO_ADVANCED_SFINAE
 #endif
 
