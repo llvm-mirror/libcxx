@@ -116,7 +116,7 @@ namespace with_locale { namespace {
 
 _LIBCPP_BEGIN_NAMESPACE_STD
 
-#ifndef _LIBCPP_APPLE_STABLE_ABI
+#ifndef _LIBCPP_STABLE_APPLE_ABI
 locale_t __cloc() {
   // In theory this could create a race condition. In practice
   // the race condition is non-fatal since it will just create
@@ -128,7 +128,7 @@ locale_t __cloc() {
   return result;
 #endif
 }
-#endif // _LIBCPP_APPLE_STABLE_ABI
+#endif // _LIBCPP_STABLE_APPLE_ABI
 
 namespace {
 
@@ -1023,7 +1023,7 @@ ctype<char>::__classic_upper_table() _NOEXCEPT
     return NULL;
 #endif
 }
-#endif // _LIBCPP_APPLE_STABLE_ABI
+#endif // _LIBCPP_STABLE_APPLE_ABI
 
 // template <> class ctype_byname<char>
 
