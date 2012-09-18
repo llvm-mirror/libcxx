@@ -2,6 +2,7 @@ include(CheckLibraryExists)
 include(CheckCXXCompilerFlag)
 
 # Check compiler flags
+check_cxx_compiler_flag(-std=c++11            LIBCXX_HAS_STDCXX11_FLAG)
 check_cxx_compiler_flag(-std=c++0x            LIBCXX_HAS_STDCXX0X_FLAG)
 check_cxx_compiler_flag(-fPIC                 LIBCXX_HAS_FPIC_FLAG)
 check_cxx_compiler_flag(-nodefaultlibs        LIBCXX_HAS_NODEFAULTLIBS_FLAG)
