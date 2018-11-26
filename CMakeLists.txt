@@ -14,9 +14,9 @@ set(PACKAGE_BUGREPORT "llvmbugs@cs.uiuc.edu")
 
 # Add path for custom modules
 set(CMAKE_MODULE_PATH
-  ${CMAKE_MODULE_PATH}
   "${CMAKE_CURRENT_SOURCE_DIR}/cmake"
   "${CMAKE_CURRENT_SOURCE_DIR}/cmake/Modules"
+  ${CMAKE_MODULE_PATH}
   )
 
 # Require out of source build.
@@ -25,6 +25,10 @@ MACRO_ENSURE_OUT_OF_SOURCE_BUILD(
  "${PROJECT_NAME} requires an out of source build. Please create a separate
  build directory and run 'cmake /path/to/${PROJECT_NAME} [options]' there."
  )
+
+if(CMAKE_SOURCE_DIR STREQUAL CMAKE_CURRENT_SOURCE_DIR)
+  set(LIBCXX_BUILT_STANDALONE 1)
+endif()
 
 #===============================================================================
 # Setup CMake Options
@@ -38,14 +42,15 @@ option(LIBCXX_ENABLE_PEDANTIC "Compile with pedantic enabled." ON)
 option(LIBCXX_ENABLE_WERROR "Fail and stop if a warning is triggered." OFF)
 option(LIBCXX_ENABLE_CXX0X "Enable -std=c++0x and use of c++0x language features if the compiler supports it." ON)
 option(LIBCXX_ENABLE_SHARED "Build libc++ as a shared library." ON)
+option(LIBCXX_INSTALL_SUPPORT_HEADERS "Install libc++ support headers." ON)
 
-set(CXXABIS none libcxxabi libcxxrt libsupc++)
+set(CXXABIS none libcxxabi libcxxrt libstdc++ libsupc++)
 if (NOT DEFINED LIBCXX_CXX_ABI)
   set(LIBCXX_CXX_ABI "none")
 endif()
 set(LIBCXX_CXX_ABI "${LIBCXX_CXX_ABI}" CACHE STRING
     "Specify C++ ABI library to use." FORCE)
-set_property(CACHE LIBCXX_CXX_ABI PROPERTY STRINGS "";${CXXABIS})
+set_property(CACHE LIBCXX_CXX_ABI PROPERTY STRINGS ;${CXXABIS})
 
 #===============================================================================
 # Configure System
@@ -128,17 +133,26 @@ macro(setup_abi_lib abipathvar abidefines abilibs abifiles abidirs)
     )
 endmacro()
 
-if ("${LIBCXX_CXX_ABI}" STREQUAL "libsupc++")
+if ("${LIBCXX_CXX_ABI}" STREQUAL "libstdc++" OR
+    "${LIBCXX_CXX_ABI}" STREQUAL "libsupc++")
   set(_LIBSUPCXX_INCLUDE_FILES
     cxxabi.h bits/c++config.h bits/os_defines.h bits/cpu_defines.h
     bits/cxxabi_tweaks.h bits/cxxabi_forced.h
     )
-  setup_abi_lib("LIBCXX_LIBSUPCXX_INCLUDE_PATHS" "-D__GLIBCXX__"
-    "supc++" "${_LIBSUPCXX_INCLUDE_FILES}" "bits"
+  if ("${LIBCXX_CXX_ABI}" STREQUAL "libstdc++")
+    set(_LIBSUPCXX_DEFINES "-DLIBSTDCXX")
+    set(_LIBSUPCXX_LIBNAME stdc++)
+  else()
+    set(_LIBSUPCXX_DEFINES "")
+    set(_LIBSUPCXX_LIBNAME supc++)
+  endif()
+  setup_abi_lib("LIBCXX_LIBSUPCXX_INCLUDE_PATHS"
+    "-D__GLIBCXX__ ${_LIBSUPCXX_DEFINES}"
+    "${_LIBSUPCXX_LIBNAME}" "${_LIBSUPCXX_INCLUDE_FILES}" "bits"
     )
 elseif ("${LIBCXX_CXX_ABI}" STREQUAL "libcxxabi")
   setup_abi_lib("LIBCXX_LIBCXXABI_INCLUDE_PATHS" ""
-    "c++abi" "cxxabi.h;cxa_demangle.h" ""
+    "c++abi" "cxxabi.h" ""
     )
 elseif ("${LIBCXX_CXX_ABI}" STREQUAL "libcxxrt")
   setup_abi_lib("LIBCXX_LIBCXXRT_INCLUDE_PATHS" "-DLIBCXXRT"
@@ -146,7 +160,7 @@ elseif ("${LIBCXX_CXX_ABI}" STREQUAL "libcxxrt")
     )
 elseif (NOT "${LIBCXX_CXX_ABI}" STREQUAL "none")
   message(FATAL_ERROR
-    "Currently libsupc++, libcxxabi, libcxxrt and none are "
+    "Currently libstdc++, libsupc++, libcxxabi, libcxxrt and none are "
     "supported for c++ abi."
     )
 endif ()
@@ -180,7 +194,11 @@ macro(append_if list condition var)
 endmacro()
 
 # Get warning flags
-append_if(LIBCXX_CXX_WARNING_FLAGS LIBCXX_HAS_WALL_FLAG -Wall)
+if (NOT MSVC)
+  append_if(LIBCXX_CXX_WARNING_FLAGS LIBCXX_HAS_WALL_FLAG -Wall)
+  set(LIBCXX_CXX_REQUIRED_FLAGS, -Werror=return-type)
+endif()
+
 append_if(LIBCXX_CXX_WARNING_FLAGS LIBCXX_HAS_W_FLAG -W)
 append_if(LIBCXX_CXX_WARNING_FLAGS LIBCXX_HAS_WNO_UNUSED_PARAMETER_FLAG -Wno-unused-parameter)
 append_if(LIBCXX_CXX_WARNING_FLAGS LIBCXX_HAS_WWRITE_STRINGS_FLAG -Wwrite-strings)
@@ -188,6 +206,9 @@ append_if(LIBCXX_CXX_WARNING_FLAGS LIBCXX_HAS_WNO_LONG_LONG_FLAG -Wno-long-long)
 if (LIBCXX_ENABLE_WERROR)
   append_if(LIBCXX_CXX_WARNING_FLAGS LIBCXX_HAS_WERROR_FLAG -Werror)
   append_if(LIBCXX_CXX_WARNING_FLAGS LIBCXX_HAS_WX_FLAG -WX)
+else()
+  append_if(LIBCXX_CXX_WARNING_FLAGS LIBCXX_HAS_WNO_ERROR_FLAG -Wno-error)
+  append_if(LIBCXX_CXX_WARNING_FLAGS LIBCXX_HAS_NO_WX_FLAG -WX-)
 endif()
 if (LIBCXX_ENABLE_PEDANTIC)
   append_if(LIBCXX_CXX_WARNING_FLAGS LIBCXX_HAS_PEDANTIC_FLAG -pedantic)
@@ -234,6 +255,10 @@ if (NOT LIBCXX_ENABLE_SHARED)
 endif()
 
 # This is the _ONLY_ place where add_definitions is called.
+if (MSVC)
+  add_definitions(-D_CRT_SECURE_NO_WARNINGS)
+endif()
+
 add_definitions(
  ${LIBCXX_CXX_REQUIRED_FLAGS}
  ${LIBCXX_CXX_WARNING_FLAGS}
@@ -245,6 +270,7 @@ add_definitions(
 #===============================================================================
 
 include_directories(include)
+add_subdirectory(include)
 
 # Add source code. This also contains all of the logic for deciding linker flags
 # soname, etc...

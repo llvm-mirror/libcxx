@@ -7,34 +7,11 @@
 //
 //===----------------------------------------------------------------------===//
 
-// <list>
-
-// Compare iterators from different containers with == or !=.
-
-#if _LIBCPP_DEBUG2 >= 1
-
-#define _LIBCPP_ASSERT(x, m) ((x) ? (void)0 : std::exit(0))
-
-#include <list>
+#include <memory>
+#include <string>
 #include <cassert>
-#include <iterator>
-#include <exception>
-#include <cstdlib>
 
 int main()
 {
-    typedef int T;
-    typedef std::list<T> C;
-    C c1;
-    C c2;
-    bool b = c1.begin() != c2.begin();
-    assert(false);
+    auto up1 = std::make_unique<std::string[]>("error"); // doesn't compile - no bound
 }
-
-#else
-
-int main()
-{
-}
-
-#endif
