@@ -4629,6 +4629,12 @@ const_pointer_cast(const shared_ptr<_Up>& __r) _NOEXCEPT
     return shared_ptr<_Tp>(__r, const_cast<_RTp*>(__r.get()));
 }
 
+template<class _Tp, class _Up>
+shared_ptr<_Tp> reinterpret_pointer_cast(const shared_ptr<_UP>& __r) _NOEXCEPT
+{
+    return shared_ptr<_Tp>(__r, reinterpret_cast<_Tp*>(__r.get()));
+}
+
 #ifndef _LIBCPP_NO_RTTI
 
 template<class _Dp, class _Tp>
