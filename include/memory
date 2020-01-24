@@ -492,6 +492,8 @@ template<class T, class U>
     shared_ptr<T> dynamic_pointer_cast(shared_ptr<U> const& r) noexcept;
 template<class T, class U>
     shared_ptr<T> const_pointer_cast(shared_ptr<U> const& r) noexcept;
+template<class T, class U>
+    shared_ptr<T> reinterpret_pointer_cast(shared_ptr<U> const& r) noexcept;
 
 // shared_ptr I/O:
 template<class E, class T, class Y>
