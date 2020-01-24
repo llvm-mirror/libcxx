@@ -492,6 +492,8 @@ template<class T, class U>
     shared_ptr<T> dynamic_pointer_cast(shared_ptr<U> const& r) noexcept;
 template<class T, class U>
     shared_ptr<T> const_pointer_cast(shared_ptr<U> const& r) noexcept;
+template<class T, class U>
+    shared_ptr<T> reinterpret_pointer_cast(shared_ptr<U> const& r) noexcept;
 
 // shared_ptr I/O:
 template<class E, class T, class Y>
@@ -4627,6 +4629,12 @@ const_pointer_cast(const shared_ptr<_Up>& __r) _NOEXCEPT
 {
     typedef typename remove_extent<_Tp>::type _RTp;
     return shared_ptr<_Tp>(__r, const_cast<_RTp*>(__r.get()));
+}
+
+template<class _Tp, class _Up>
+shared_ptr<_Tp> reinterpret_pointer_cast(const shared_ptr<_Up>& __r) _NOEXCEPT
+{
+    return shared_ptr<_Tp>(__r, reinterpret_cast<_Tp*>(__r.get()));
 }
 
 #ifndef _LIBCPP_NO_RTTI
